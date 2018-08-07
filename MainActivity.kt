@@ -24,21 +24,28 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     var currentDate = LocalDateTime.now()
     var formatter = DateTimeFormatter.ofPattern("MMddyyyy")
     var date = currentDate.format(formatter)
+    var today = "0806018"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         setContentView(R.layout.activity_main)
+        setSupportActionBar(findViewById(R.id.my_toolbar))
         val fab = findViewById<View>(R.id.fab) as FloatingActionButton
         listViewItems = findViewById<View>(R.id.wajures_list) as ListView
 
         mDatabase = FirebaseDatabase.getInstance().reference
+
+
+
         wajureItemList = mutableListOf<WajureItem>()
         adapter = WajureItemAdapter(this, wajureItemList!!)
         listViewItems!!.adapter = adapter
 
         mDatabase.addValueEventListener(itemListener)
+
 
         fab.setOnClickListener { view ->
             addNewWajureDialog()
@@ -53,6 +60,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             updateWajureDialog(itemRef)
 //            updateWajureTotal(itemRef)
         }
+
 
     }
 
@@ -72,6 +80,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             wajureItem.wajureName = inputWajureField.text.toString()
             wajureItem.wajureCreationDate = date
             wajureItem.wajureTotal = 0
+            wajureItem.wajureDayTotal = 0
 
 
             //We first make a push so that a new item is made with a unique ID
@@ -94,6 +103,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
             val wajuressss = dataSnapshot.child("wajure_item")
             val items = wajuressss.children.iterator()
+            mapCheckIns(dataSnapshot)
             if(items.hasNext()) {
                 addDataToList(dataSnapshot)
             }
@@ -130,6 +140,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                     wajureItem.wajureID = currentItem.key
                     wajureItem.wajureName = map.get("wajureName") as String?
                     wajureItem.wajureTotal = map.get("wajureTotal").toString().toInt()
+                    wajureItem.wajureDayTotal = map.get("wajureTotal").toString().toInt()
                     wajureItemList!!.add(wajureItem)
                 }
 
@@ -143,11 +154,13 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
     private fun updateWajureTotal(checkinAmount: Int, wajure: WajureItem) {
         val wajureID = wajure.wajureID
-        var total = checkinAmount
+        checkinAmount
+        var wajureName = wajure.wajureName
+        var wajureCr = wajure.wajureCreationDate
         var currentTotal = wajure.wajureTotal
-        total = checkinAmount + currentTotal!!
-
-        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureTotal").setValue(total)
+        var currentDayTotal = wajure.wajureDayTotal
+        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureTotal").setValue(checkinAmount + currentTotal!!)
+        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureDayTotal").setValue(checkinAmount + currentDayTotal!!)
 
     }
 
@@ -204,5 +217,38 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     }
 
 
-}
+    fun mapCheckIns(db: DataSnapshot){
+
+        val items = db.children.iterator()
+        //Check if current database contains any collection
+        if (items.hasNext()) {
+            val checkIndex = items.next()
+            val itemsIterator = checkIndex.children.iterator()
+
+            //check if the collection has any to do items or not
+            while (itemsIterator.hasNext()) {
+
+                //get current item
+                val currentItem = itemsIterator.next()
+                //get current data in a map
+                val map = currentItem.value as HashMap<String, Any>
+                //key will return Firebase ID
+
+                if(today!=date) {
+                    val id = map.get("wajureID")
+                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
+
+                }
+                today = date
+
+            }
+
+
+                }
+
+
+        }
+
+
+    }
 

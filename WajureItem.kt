@@ -8,6 +8,7 @@ class WajureItem {
     var wajureName: String? = null
     var wajureCreationDate: String? = null
     var wajureTotal: Int? = null
+    var wajureDayTotal: Int? = null
 
 
 
