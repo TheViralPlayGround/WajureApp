@@ -1,6 +1,8 @@
 package com.example.diplomat.wajure
 
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -15,6 +17,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
+
+
 class MainActivity : AppCompatActivity(), WajureRowListener {
 
     lateinit var mDatabase: DatabaseReference
@@ -24,11 +28,21 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     var currentDate = LocalDateTime.now()
     var formatter = DateTimeFormatter.ofPattern("MMddyyyy")
     var date = currentDate.format(formatter)
-    var today = "0806018"
+    var prefs: SharedPreferences? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
+
+//        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+//        if (prefs.getString("date","0") != dataDate){
+//            prefs.edit().putString("date",date)
+//            setDateToday = true
+//
+//        }
+
 
 
         setContentView(R.layout.activity_main)
@@ -90,6 +104,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             //then, we used the reference to set the value on that ID
             wajureNode.setValue(wajureItem)
 
+            prefs!!.edit().putString("date",date)
             dialog.dismiss()
             Toast.makeText(this, "Item saved with ID " + wajureItem.wajureID, Toast.LENGTH_SHORT).show()
         }
@@ -234,14 +249,16 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 val map = currentItem.value as HashMap<String, Any>
                 //key will return Firebase ID
 
-                if(today!=date) {
+                val currentSP = prefs!!.getString("date","0").toString()
+                if(currentSP != date) {
                     val id = map.get("wajureID")
                     mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
 
                 }
-                today = date
 
             }
+
+            prefs!!.edit().putString("date", date)
 
 
                 }
