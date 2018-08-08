@@ -30,18 +30,11 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     var date = currentDate.format(formatter)
     var prefs: SharedPreferences? = null
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-//        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-//        if (prefs.getString("date","0") != dataDate){
-//            prefs.edit().putString("date",date)
-//            setDateToday = true
-//
-//        }
 
 
 
@@ -50,6 +43,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         val fab = findViewById<View>(R.id.fab) as FloatingActionButton
         listViewItems = findViewById<View>(R.id.wajures_list) as ListView
 
+        supportActionBar!!.setIcon(R.drawable.wajurelogofinal)
         mDatabase = FirebaseDatabase.getInstance().reference
 
 
@@ -85,7 +79,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
         alert.setMessage("Add New Wajure")
         alert.setTitle("Enter Wajure Name")
-        alert.setView(inputWajureField)
+        alert.setView(R.layout.add_wajure_layout)
 
         alert.setPositiveButton("Submit") { dialog, positiveButton ->
 
@@ -95,6 +89,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             wajureItem.wajureCreationDate = date
             wajureItem.wajureTotal = 0
             wajureItem.wajureDayTotal = 0
+            wajureItem.wajureGoal = 0
 
 
             //We first make a push so that a new item is made with a unique ID
@@ -116,9 +111,9 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             // Get Post object and use the values to update the UI
 //
 
-            val wajuressss = dataSnapshot.child("wajure_item")
-            val items = wajuressss.children.iterator()
-            mapCheckIns(dataSnapshot)
+            val wajures = dataSnapshot.child("wajure_item")
+            val items = wajures.children.iterator()
+//            mapCheckIns(dataSnapshot)
             if(items.hasNext()) {
                 addDataToList(dataSnapshot)
             }
@@ -155,7 +150,8 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                     wajureItem.wajureID = currentItem.key
                     wajureItem.wajureName = map.get("wajureName") as String?
                     wajureItem.wajureTotal = map.get("wajureTotal").toString().toInt()
-                    wajureItem.wajureDayTotal = map.get("wajureTotal").toString().toInt()
+                    wajureItem.wajureDayTotal = map.get("wajureDayTotal").toString().toInt()
+                    wajureItem.wajureGoal = map.get("wajureGoal").toString().toInt()
                     wajureItemList!!.add(wajureItem)
                 }
 
@@ -167,15 +163,15 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     }
 
 
-    private fun updateWajureTotal(checkinAmount: Int, wajure: WajureItem) {
-        val wajureID = wajure.wajureID
-        checkinAmount
-        var wajureName = wajure.wajureName
-        var wajureCr = wajure.wajureCreationDate
-        var currentTotal = wajure.wajureTotal
-        var currentDayTotal = wajure.wajureDayTotal
-        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureTotal").setValue(checkinAmount + currentTotal!!)
-        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureDayTotal").setValue(checkinAmount + currentDayTotal!!)
+    private fun updateWajureTotal(check: Int) {
+//        val wajureID = wajure.wajureID
+//        checkinAmount
+//        var wajureName = wajure.wajureName
+//        var wajureCr = wajure.wajureCreationDate
+//        var currentTotal = wajure.wajureTotal
+//        var currentDayTotal = wajure.wajureDayTotal
+
+
 
     }
 
@@ -208,7 +204,12 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             //then, we used the reference to set the value on that ID
             checkInNode.setValue(checkInItem)
 
-            updateWajureTotal(newTotal, wajure)
+            var wajureDayTotal = newTotal + wajure.wajureDayTotal!!
+            var wajureTotal = newTotal + wajure.wajureTotal!!
+            mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureTotal").setValue(wajureTotal)
+            mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureDayTotal").setValue(wajureDayTotal)
+
+//            updateWajureTotal(newTotal)
 
 
             dialog.dismiss()
@@ -252,7 +253,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 val currentSP = prefs!!.getString("date","0").toString()
                 if(currentSP != date) {
                     val id = map.get("wajureID")
-                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
+//                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
 
                 }
 
