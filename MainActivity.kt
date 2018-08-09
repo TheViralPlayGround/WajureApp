@@ -1,8 +1,6 @@
 package com.example.diplomat.wajure
 
-import android.content.SharedPreferences
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -28,14 +26,10 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     var currentDate = LocalDateTime.now()
     var formatter = DateTimeFormatter.ofPattern("MMddyyyy")
     var date = currentDate.format(formatter)
-    var prefs: SharedPreferences? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
-
-
 
 
         setContentView(R.layout.activity_main)
@@ -79,7 +73,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
         alert.setMessage("Add New Wajure")
         alert.setTitle("Enter Wajure Name")
-        alert.setView(R.layout.add_wajure_layout)
+        alert.setView(inputWajureField)
 
         alert.setPositiveButton("Submit") { dialog, positiveButton ->
 
@@ -99,7 +93,6 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             //then, we used the reference to set the value on that ID
             wajureNode.setValue(wajureItem)
 
-            prefs!!.edit().putString("date",date)
             dialog.dismiss()
             Toast.makeText(this, "Item saved with ID " + wajureItem.wajureID, Toast.LENGTH_SHORT).show()
         }
@@ -146,11 +139,16 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 val map = currentItem.value as HashMap<String, Any>
                 //key will return Firebase ID
 
+                var id = currentItem.key
+
+                mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
+
+
                 if (map.containsKey("wajureName")) {
                     wajureItem.wajureID = currentItem.key
                     wajureItem.wajureName = map.get("wajureName") as String?
                     wajureItem.wajureTotal = map.get("wajureTotal").toString().toInt()
-                    wajureItem.wajureDayTotal = map.get("wajureDayTotal").toString().toInt()
+                    wajureItem.wajureDayTotal = checkinAmountDay(id,dataSnapshot)
                     wajureItem.wajureGoal = map.get("wajureGoal").toString().toInt()
                     wajureItemList!!.add(wajureItem)
                 }
@@ -160,6 +158,24 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         }
         //alert adapter that has changed
         adapter.notifyDataSetChanged()
+    }
+
+    private fun checkinAmountDay(id: String?, dataSnapshot: DataSnapshot): Int? {
+        val ref = dataSnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).children.iterator()
+        var currentDayTotal = 0
+
+        while(ref.hasNext()){
+            val currentItem = ref.next()
+            val map = currentItem.value as HashMap<String, Any>
+            val wajureIDCheckIn = map.getValue("wajureID")
+            if (wajureIDCheckIn == id) {
+                val checkIn = map.getValue("checkInTotal").toString().toInt()
+                currentDayTotal += checkIn
+                mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id).child("wajureDayTotal").setValue(currentDayTotal)
+            }
+
+        }
+        return currentDayTotal
     }
 
 
@@ -233,39 +249,41 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     }
 
 
-    fun mapCheckIns(db: DataSnapshot){
+//    fun mapCheckIns(db: DataSnapshot){
+//
+//        val items = db.children.iterator()
+//        //Check if current database contains any collection
+//        if (items.hasNext()) {
+//            val checkIndex = items.next()
+//            val itemsIterator = checkIndex.children.iterator()
+//
+//            //check if the collection has any to do items or not
+//            while (itemsIterator.hasNext()) {
+//
+//                //get current item
+//                val currentItem = itemsIterator.next()
+//                //get current data in a map
+//                val map = currentItem.value as HashMap<String, Any>
+//                //key will return Firebase ID
+//
+//                val currentSP = prefs!!.getString("date","0").toString()
+//                if(currentSP != date) {
+//                    val id = map.get("wajureID")
+////                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
+//
+//                }
+//
+//            }
+//
+//            prefs!!.edit().putString("date", date)
+//
+//
+//                }
 
-        val items = db.children.iterator()
-        //Check if current database contains any collection
-        if (items.hasNext()) {
-            val checkIndex = items.next()
-            val itemsIterator = checkIndex.children.iterator()
 
-            //check if the collection has any to do items or not
-            while (itemsIterator.hasNext()) {
-
-                //get current item
-                val currentItem = itemsIterator.next()
-                //get current data in a map
-                val map = currentItem.value as HashMap<String, Any>
-                //key will return Firebase ID
-
-                val currentSP = prefs!!.getString("date","0").toString()
-                if(currentSP != date) {
-                    val id = map.get("wajureID")
-//                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
-
-                }
-
-            }
-
-            prefs!!.edit().putString("date", date)
+//        }
 
 
-                }
-
-
-        }
 
 
     }
