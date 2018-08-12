@@ -1,20 +1,16 @@
 package com.example.diplomat.wajure
 
+import android.graphics.*
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
-import android.widget.AdapterView
-import android.widget.EditText
-import android.widget.ListView
-import android.widget.Toast
+import android.widget.*
 import com.google.firebase.database.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
-
 
 
 class MainActivity : AppCompatActivity(), WajureRowListener {
@@ -22,6 +18,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     lateinit var mDatabase: DatabaseReference
     var wajureItemList: MutableList<WajureItem>? = null
     lateinit var adapter: WajureItemAdapter
+    lateinit var circle: ImageView
     private var listViewItems: ListView? = null
     var currentDate = LocalDateTime.now()
     var formatter = DateTimeFormatter.ofPattern("MMddyyyy")
@@ -36,18 +33,21 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         setSupportActionBar(findViewById(R.id.my_toolbar))
         val fab = findViewById<View>(R.id.fab) as FloatingActionButton
         listViewItems = findViewById<View>(R.id.wajures_list) as ListView
-
+        circle = findViewById(R.id.circleProgress)
         supportActionBar!!.setIcon(R.drawable.wajurelogofinal)
         mDatabase = FirebaseDatabase.getInstance().reference
 
 
 
+//        circularImageBar(circle,30)
         wajureItemList = mutableListOf<WajureItem>()
         adapter = WajureItemAdapter(this, wajureItemList!!)
         listViewItems!!.adapter = adapter
 
+//        val mapDayTotal = HashMap<String, Any>()
+//        mapDayTotal.put("wajureDayTotal", "0")
+//        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).updateChildren(mapDayTotal)
         mDatabase.addValueEventListener(itemListener)
-
 
         fab.setOnClickListener { view ->
             addNewWajureDialog()
@@ -96,18 +96,19 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             dialog.dismiss()
             Toast.makeText(this, "Item saved with ID " + wajureItem.wajureID, Toast.LENGTH_SHORT).show()
         }
+
         alert.show()
     }
+
 
     var itemListener: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(dataSnapshot: DataSnapshot) {
             // Get Post object and use the values to update the UI
 //
-
             val wajures = dataSnapshot.child("wajure_item")
             val items = wajures.children.iterator()
 //            mapCheckIns(dataSnapshot)
-            if(items.hasNext()) {
+            if (items.hasNext()) {
                 addDataToList(dataSnapshot)
             }
         }
@@ -139,16 +140,13 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 val map = currentItem.value as HashMap<String, Any>
                 //key will return Firebase ID
 
-                var id = currentItem.key
-
-                mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(id.toString()).child("wajureDayTotal").setValue(0)
-
+                setWajureDayTotal(map, dataSnapshot)
 
                 if (map.containsKey("wajureName")) {
                     wajureItem.wajureID = currentItem.key
                     wajureItem.wajureName = map.get("wajureName") as String?
                     wajureItem.wajureTotal = map.get("wajureTotal").toString().toInt()
-                    wajureItem.wajureDayTotal = checkinAmountDay(id,dataSnapshot)
+                    wajureItem.wajureDayTotal = map.get("wajureDayTotal").toString().toInt()
                     wajureItem.wajureGoal = map.get("wajureGoal").toString().toInt()
                     wajureItemList!!.add(wajureItem)
                 }
@@ -160,11 +158,26 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         adapter.notifyDataSetChanged()
     }
 
+    private fun setWajureDayTotal(map: HashMap<String,Any>, snapshot: DataSnapshot){
+            val map = map
+            val key = map.get("wajureID").toString()
+            val ref = snapshot.child(Constants.FIREBASE_CHECKIN_ITEM).child(date).children.iterator()
+            ref.forEach{
+                if (key == ref.next().key) {
+                    val currentItem = ref.next()
+                    var currentDayTotal = map.get("wajureDayTotal").toString().toInt()
+                    var total = map.get("wajureDayTotal").toString().toInt()
+                    total += currentDayTotal
+                    mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(key).setValue(total)
+                }
+            }
+    }
+
     private fun checkinAmountDay(id: String?, dataSnapshot: DataSnapshot): Int? {
         val ref = dataSnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).children.iterator()
         var currentDayTotal = 0
 
-        while(ref.hasNext()){
+        while (ref.hasNext()) {
             val currentItem = ref.next()
             val map = currentItem.value as HashMap<String, Any>
             val wajureIDCheckIn = map.getValue("wajureID")
@@ -188,7 +201,6 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 //        var currentDayTotal = wajure.wajureDayTotal
 
 
-
     }
 
     private fun updateWajureDialog(wajure: WajureItem) {
@@ -208,6 +220,10 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             val newTotal = itemEditText.text.toString().toInt()
 
             checkInItem.wajureID = wajureID
+
+
+
+
             checkInItem.checkInDate = date
             checkInItem.checkInTotal = newTotal
 
@@ -215,7 +231,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
 
             //We first make a push so that a new item is made with a unique ID
-            val checkInNode = mDatabase.child(Constants.FIREBASE_CHECKIN_ITEM).push()
+            val checkInNode = mDatabase.child(Constants.FIREBASE_CHECKIN_ITEM).child("08112018").push()
             checkInItem.checkInID = checkInNode.key
             //then, we used the reference to set the value on that ID
             checkInNode.setValue(checkInItem)
@@ -223,7 +239,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             var wajureDayTotal = newTotal + wajure.wajureDayTotal!!
             var wajureTotal = newTotal + wajure.wajureTotal!!
             mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureTotal").setValue(wajureTotal)
-            mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID!!).child("wajureDayTotal").setValue(wajureDayTotal)
+            mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID).child("wajureDayTotal").setValue(wajureDayTotal)
 
 //            updateWajureTotal(newTotal)
 
@@ -284,7 +300,30 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 //        }
 
 
+    fun circularImageBar(iv2: ImageView, i: Int) {
 
+        val b = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(b)
+        val paint = Paint()
 
+        paint.color = Color.parseColor("#c4c4c4")
+        paint.strokeWidth = 10F
+        paint.style = Paint.Style.STROKE
+        canvas.drawCircle(150F, 150F, 140F, paint)
+        paint.color = Color.parseColor("#FFDB4C")
+        paint.strokeWidth = 10F
+        paint.style = Paint.Style.FILL
+        val oval = RectF()
+        paint.style = Paint.Style.STROKE
+        oval.set(10.0F,10F,290F,290F)
+        canvas.drawArc(oval, 270F, ((i*360F)/100F), false, paint)
+        paint.strokeWidth = 0F
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = Color.parseColor("#8E8E93")
+        paint.textSize = 140F
+//        canvas.drawText(""+i, 150F, 150+(paint.textSize /3), paint)
+        iv2.setImageBitmap(b)
     }
+
+}
 
