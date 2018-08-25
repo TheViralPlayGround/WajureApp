@@ -8,9 +8,6 @@ class WajureItem {
     var wajureName: String? = null
     var wajureCreationDate: String? = null
     var wajureTotal: Int? = null
-    var wajureDayTotal: Int? = null
-    var wajureGoal: Int? = null
-
-
-
+    var wajureDayComplete: Boolean? = null
+    var checkIn: String? = null
 }

@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.ImageView
 import android.widget.TextView
 
 
@@ -15,8 +16,8 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
         val wajureID: String = itemList.get(position).wajureID as String
         val wajureName: String = itemList.get(position).wajureName as String
         val wajureTotal: Int = itemList.get(position).wajureTotal as Int
-        val wajureDayTotal: Int = itemList.get(position).wajureDayTotal as Int
-        val wajureGoal: Int = itemList.get(position).wajureGoal as Int
+        val wajureDayComplete: Boolean = itemList.get(position).wajureDayComplete as Boolean
+        val checkIn: String = itemList.get(position).checkIn as String
 
         val view: View
         val vh: ListRowHolder
@@ -29,10 +30,9 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
             vh = view.tag as ListRowHolder
         }
         vh.name.text = wajureName
-        vh.avatar.text = wajureName.substring(0,1)
-        vh.dayTotal.text = wajureDayTotal.toString()
-        vh.total.text = wajureTotal.toString()
-        vh.goal.text = wajureGoal.toString()
+        if (wajureDayComplete == true){
+            vh.dayTotal.setImageResource(R.drawable.checked_circle_primary)
+        } else{ vh.dayTotal.setImageResource(R.drawable.unchecked_circle_primary)}
         return view
     }
     override fun getItem(index: Int): Any {
@@ -44,11 +44,12 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
     override fun getCount(): Int {
         return itemList.size
     }
+
+    fun updateDayBoolean(boolean: Boolean){
+    }
+
     private class ListRowHolder(row: View?) {
         val name: TextView = row!!.findViewById<TextView>(R.id.wajureName) as TextView
-        val avatar: TextView = row!!.findViewById<TextView>(R.id.wajure_title_letter) as TextView
-        val dayTotal: TextView = row!!.findViewById(R.id.daily_count) as TextView
-        val total: TextView = row!!.findViewById(R.id.total_count) as TextView
-        val goal: TextView = row!!.findViewById(R.id.goal_count) as TextView
+        val dayTotal: ImageView = row!!.findViewById(R.id.wajure_status_checkmark) as ImageView
     }
 }

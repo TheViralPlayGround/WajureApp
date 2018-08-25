@@ -7,6 +7,6 @@ class CheckIn {
     var checkInID: String? = null
     var checkInDate: String? = null
     var wajureID: String? = null
-    var checkInTotal: Int? = null
+    var checkInName: String? = null
 
 }
