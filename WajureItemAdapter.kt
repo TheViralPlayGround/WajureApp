@@ -12,6 +12,7 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
     private val mInflater: LayoutInflater = LayoutInflater.from(context)
     var itemList = wajureItemList
 
+
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val wajureID: String = itemList.get(position).wajureID as String
         val wajureName: String = itemList.get(position).wajureName as String

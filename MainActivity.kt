@@ -12,6 +12,7 @@ import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_main.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 class MainActivity : AppCompatActivity(), WajureRowListener {
@@ -53,7 +54,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         checkInAdapter = CheckInAdapter(this, checkInItemList!!)
         listViewItems!!.adapter = adapter
 
-        mDatabase.orderByChild("wajureName").addValueEventListener(itemListener)
+        mDatabase.addValueEventListener(itemListener)
 
         fab.setOnClickListener { view ->
             addNewWajureDialog()
@@ -116,6 +117,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 }
             }
         }
+        wajureItemList!!.sortBy { it.wajureName }
         adapter.notifyDataSetChanged()
     }
 
@@ -269,7 +271,6 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 }
 
     private fun resetWajureTotal(datasnapshot: DataSnapshot){
-    //TODO  swtich the boolean for the listview items to be false which allows the
         val lastDate = date
         date = currentDate.format(formatter)
         if (lastDate != date) {
@@ -304,7 +305,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                 val map = currentItem.value as HashMap<String, Any>
 
                 if (map.containsKey("wajureName")) {
-                    val thus = map.get("wajureTotal") as String?
+                    val thus = map.get("wajureTotal").toString() as String?
                     newTotal = newTotal + thus!!.toInt()
 
                 }
