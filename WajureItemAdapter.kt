@@ -5,12 +5,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 
 
 class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem>) : BaseAdapter() {
     private val mInflater: LayoutInflater = LayoutInflater.from(context)
     var itemList = wajureItemList
+    val context = context
 
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
@@ -33,6 +35,7 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
         vh.name.text = wajureName
         if (wajureDayComplete == true){
             vh.dayTotal.setImageResource(R.drawable.checked_circle_primary)
+
         } else{ vh.dayTotal.setImageResource(R.drawable.unchecked_circle_primary)}
         return view
     }
@@ -52,5 +55,6 @@ class WajureItemAdapter(context: Context, wajureItemList: MutableList<WajureItem
     private class ListRowHolder(row: View?) {
         val name: TextView = row!!.findViewById<TextView>(R.id.wajureName) as TextView
         val dayTotal: ImageView = row!!.findViewById(R.id.wajure_status_checkmark) as ImageView
+        val listView: LinearLayout = row!!.findViewById(R.id.wajureRow) as LinearLayout
     }
 }

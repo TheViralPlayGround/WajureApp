@@ -1,5 +1,7 @@
 package com.example.diplomat.wajure
 
+import android.app.Activity
+import android.content.Intent
 import android.graphics.*
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
@@ -13,7 +15,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-
 
 class MainActivity : AppCompatActivity(), WajureRowListener {
 
@@ -29,8 +30,10 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     var formatter = DateTimeFormatter.ofPattern("MMddyyyy")
     var formatterDate = DateTimeFormatter.ofPattern("MM/dd/yy")
     var date = currentDate.format(formatter)
+    lateinit var topHeader: LinearLayout
     lateinit var totalCompleteTodayView: TextView
     lateinit var totalWajures: TextView
+     lateinit var fa: Activity
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,9 +42,11 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         setSupportActionBar(findViewById(R.id.my_toolbar))
 
         totalCompleteTodayView = findViewById(R.id.completeToday)
+        fa = this
         totalWajures = findViewById(R.id.totalWajureComplete)
         dateTextView = this.findViewById(R.id.todayDate)
         dateTextView.text = currentDate.format(formatterDate)
+        topHeader = findViewById(R.id.topHeader)
         val fab = findViewById<View>(R.id.fab) as FloatingActionButton
         listViewItems = findViewById<View>(R.id.wajures_list) as ListView
         circle = findViewById(R.id.circleProgress)
@@ -56,16 +61,25 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
         mDatabase.addValueEventListener(itemListener)
 
-        fab.setOnClickListener { view ->
+        topHeader.setOnClickListener{_->
+                    val i = Intent(applicationContext, ReportActivity::class.java)
+
+                    startActivity(i)
+            setContentView(R.layout.report_activity)
+
+
+        }
+
+        fab.setOnClickListener { _ ->
             addNewWajureDialog()
         }
 
-        listViewItems!!.onItemClickListener = AdapterView.OnItemClickListener { adapterView, view, position, id ->
+        listViewItems!!.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val wajureRef = adapter.itemList.get(position)
             updateWajure(wajureRef)
         }
 
-        listViewItems!!.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, view, position, id ->
+        listViewItems!!.onItemLongClickListener = AdapterView.OnItemLongClickListener { _, _, position, _ ->
             val wajureRef = adapter.itemList.get(position)
             deleteWajureDialog(wajureRef.wajureID)
             true
@@ -105,7 +119,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             while (itemsIterator.hasNext()) {
                 val currentItem = itemsIterator.next()
                 val newWajure = WajureItem.create()
-                val map = currentItem.value as HashMap<String, Any>
+                val map = currentItem.value as HashMap<*, *>
 
                 if (map.containsKey("wajureName")) {
                     newWajure.wajureID = currentItem.key
@@ -128,7 +142,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         alert.setTitle("Wajure")
         alert.setView(inputWajureField)
 
-        alert.setPositiveButton("Submit") { dialog, positiveButton ->
+        alert.setPositiveButton("Submit") { dialog, _ ->
             val newWajure = WajureItem.create()
             newWajure.wajureName = inputWajureField.text.toString()
             newWajure.wajureCreationDate = date
@@ -141,7 +155,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             dialog.dismiss()
             Toast.makeText(this, newWajure.wajureName + " saved!", Toast.LENGTH_SHORT).show()
         }
-        alert.setNegativeButton("Cancel") { dialog, which ->
+        alert.setNegativeButton("Cancel") { dialog, _ ->
             dialog.dismiss()
         }
         alert.show()
@@ -151,13 +165,13 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         val alert = AlertDialog.Builder(this)
         alert.setMessage("Delete Wajure and its history?")
         alert.setTitle("Delete")
-        alert.setPositiveButton("Delete") { dialog, positiveButton ->
+        alert.setPositiveButton("Delete") { dialog, _ ->
             val wajureNode = mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(wajureID.toString())
             wajureNode.removeValue().addOnSuccessListener { }
             dialog.dismiss()
             Toast.makeText(this, "Wajure Deleted", Toast.LENGTH_SHORT).show()
         }
-        alert.setNegativeButton("Cancel") { dialog, which ->
+        alert.setNegativeButton("Cancel") { dialog, _ ->
             dialog.dismiss()
         }
         alert.show()
@@ -193,7 +207,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     }
 
     fun createCheckInList(dataSnapshot: DataSnapshot) {
-        var ref = dataSnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).children.iterator()
+        val ref = dataSnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).children.iterator()
         if (checkInItemList != null) {
             checkInItemList!!.clear()
         }
@@ -204,7 +218,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             while (itemsIterator.hasNext()) {
                 val currentItem = itemsIterator.next()
                 val newCheckIn = CheckIn.create()
-                val map = currentItem.value as HashMap<String, Any>
+                val map = currentItem.value as HashMap<*, *>
                 if (map.containsKey(date)) {
                     newCheckIn.checkInID = currentItem.key
                     newCheckIn.checkInName = map.get("checkInName") as String?
@@ -219,7 +233,6 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
 
     override fun modifyItemState(itemObjectId: String) {
-        val itemReference = mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(itemObjectId)
 
     }
 
@@ -256,10 +269,6 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         iv2.setImageBitmap(b)
     }
 
-    override fun onPause() {
-        super.onPause()
-    }
-
     override fun onResume() {
         super.onResume()
         val lastDate = date
@@ -281,7 +290,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             val itemsIterator = checkInIndex.children.iterator()
             while (itemsIterator.hasNext()) {
                 val currentItem = itemsIterator.next()
-                val map = currentItem.value as HashMap<String, Any>
+                val map = currentItem.value as HashMap<*, *>
                 mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(map.get("wajureID") as String).child("wajureDayComplete").setValue(false)
             }}}
     }
@@ -301,8 +310,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             val itemsIterator = wajureIndex.children.iterator()
             while (itemsIterator.hasNext()) {
                 val currentItem = itemsIterator.next()
-                val newWajure = WajureItem.create()
-                val map = currentItem.value as HashMap<String, Any>
+                val map = currentItem.value as HashMap<*, *>
 
                 if (map.containsKey("wajureName")) {
                     val thus = map.get("wajureTotal").toString() as String?
@@ -315,4 +323,13 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
         return newTotal.toString()
 
     }
+
+    private fun topDayTotal(dataSnapshot: DataSnapshot){
+
+    }
+
+
+
+    //If yesterdays total is greater than the total that we have registered as the top total, then make yesterdays child count be
+    // the top day total
 }
