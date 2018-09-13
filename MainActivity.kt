@@ -15,6 +15,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity(), WajureRowListener {
 
@@ -33,7 +34,11 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
     lateinit var topHeader: LinearLayout
     lateinit var totalCompleteTodayView: TextView
     lateinit var totalWajures: TextView
-     lateinit var fa: Activity
+    lateinit var fa: Activity
+    var list: ArrayList<Int> = ArrayList()
+    var list2: ArrayList<Int> = ArrayList()
+
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,17 +66,20 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
         mDatabase.addValueEventListener(itemListener)
 
-        topHeader.setOnClickListener{_->
-                    val i = Intent(applicationContext, ReportActivity::class.java)
-
-                    startActivity(i)
+        topHeader.setOnClickListener { _ ->
+            val i = Intent(applicationContext, ReportActivity::class.java)
+            var bundle = Bundle ()
+            bundle.putIntegerArrayList("LIST", list)
+            bundle.putIntegerArrayList("LIST2", list2)
+            i.putExtra("LIST", bundle)
+            startActivity(i)
             setContentView(R.layout.report_activity)
-
 
         }
 
         fab.setOnClickListener { _ ->
             addNewWajureDialog()
+
         }
 
         listViewItems!!.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
@@ -92,7 +100,7 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             val wajureIterator = wajureNode.children.iterator()
             val totalComplete = totalCompleteToday(dataSnapshot)
             totalCompleteTodayView.setText(totalComplete)
-            val total =  totalWajures(dataSnapshot)
+            val total = totalWajures(dataSnapshot)
             totalWajureComplete.text = total
 
             if (wajureIterator.hasNext()) {
@@ -277,31 +285,34 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
             dateTextView.text = currentDate.format(formatterDate)
         }
 
-}
-
-    private fun resetWajureTotal(datasnapshot: DataSnapshot){
-        val lastDate = date
-        date = currentDate.format(formatter)
-        if (lastDate != date) {
-        val ref = datasnapshot.child(Constants.FIREBASE_WAJURE_ITEM).children.iterator()
-        //Check if current database contains any collectionc
-        if (ref.hasNext()) {
-            val checkInIndex = ref.next()
-            val itemsIterator = checkInIndex.children.iterator()
-            while (itemsIterator.hasNext()) {
-                val currentItem = itemsIterator.next()
-                val map = currentItem.value as HashMap<*, *>
-                mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(map.get("wajureID") as String).child("wajureDayComplete").setValue(false)
-            }}}
     }
 
-    private fun totalCompleteToday(dataSnapshot: DataSnapshot): String{
+    private fun resetWajureTotal(datasnapshot: DataSnapshot) {
+        // If there is not a node for the current date - > then there should be no things checked
+        val todayNode = datasnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).child(date).exists()
+        if (!todayNode) {
+            val ref = datasnapshot.children.iterator()
+            if (ref.hasNext()) {
+                val checkInIndex = ref.next()
+                val itemsIterator = checkInIndex.children.iterator()
+                while (itemsIterator.hasNext()) {
+                    val currentItem = itemsIterator.next()
+                    val map = currentItem.value as HashMap<*,*>
+                    if (map.containsKey("wajureName")) {
+                        mDatabase.child(Constants.FIREBASE_WAJURE_ITEM).child(map.get("wajureID") as String).child("wajureDayComplete").setValue(false)
+                }
+            }}
+        }
+    }
+
+    private fun totalCompleteToday(dataSnapshot: DataSnapshot): String {
         return dataSnapshot.child(Constants.FIREBASE_CHECKIN_ITEM).child(date).childrenCount.toString()
 
     }
 
     private fun totalWajures(dataSnapshot: DataSnapshot): String {
         var newTotal = 0
+        var yvalue = 0
 
         val items = dataSnapshot.children.iterator()
         //Check if current database contains any collection
@@ -316,6 +327,16 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
                     val thus = map.get("wajureTotal").toString() as String?
                     newTotal = newTotal + thus!!.toInt()
 
+                    //
+                    val yValueFloat = yvalue.toFloat()
+                    val newTotalFloat = thus.toFloat()
+
+                    list.add(yvalue)
+                    list2.add(newTotal)
+
+                    //
+                    yvalue += 1
+
                 }
 
             }
@@ -324,12 +345,9 @@ class MainActivity : AppCompatActivity(), WajureRowListener {
 
     }
 
-    private fun topDayTotal(dataSnapshot: DataSnapshot){
+    private fun topDayTotal(dataSnapshot: DataSnapshot) {
 
     }
-
-
-
     //If yesterdays total is greater than the total that we have registered as the top total, then make yesterdays child count be
     // the top day total
 }
